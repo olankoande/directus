@@ -11,24 +11,28 @@ services:
       redis:
         condition: service_healthy
     environment:
-      KEY: ${DIRECTUS_KEY}
-      SECRET: ${DIRECTUS_SECRET}
-      PUBLIC_URL: ${DIRECTUS_PUBLIC_URL}
+      # --- Directus core ---
+      KEY: ${DIRECTUS_KEY:-lankoandeousmane}
+      SECRET: ${DIRECTUS_SECRET:-lankoandeousmanesalifou}
+      PUBLIC_URL: ${DIRECTUS_PUBLIC_URL:-https://jobizybackend.kikandi.com/}
 
-      ADMIN_EMAIL: ${DIRECTUS_ADMIN_EMAIL}
-      ADMIN_PASSWORD: ${DIRECTUS_ADMIN_PASSWORD}
+      # --- Initial admin user ---
+      ADMIN_EMAIL: ${DIRECTUS_ADMIN_EMAIL:-admin@kikandi.com}
+      ADMIN_PASSWORD: ${DIRECTUS_ADMIN_PASSWORD:-L@nk0usm@ne}
 
+      # --- Database (PostgreSQL) ---
       DB_CLIENT: postgres
       DB_HOST: postgres
       DB_PORT: 5432
-      DB_DATABASE: ${POSTGRES_DB}
-      DB_USER: ${POSTGRES_USER}
-      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_DATABASE: ${POSTGRES_DB:-directus}
+      DB_USER: ${POSTGRES_USER:-directus}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-L@nk0usm@ne}
 
+      # --- Redis / cache / synchronization ---
       REDIS_ENABLED: "true"
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-L@nk0usm@ne}
 
       CACHE_ENABLED: "true"
       CACHE_STORE: redis
@@ -36,6 +40,7 @@ services:
 
       SYNCHRONIZATION_STORE: redis
 
+      # --- Optional ---
       WEBSOCKETS_ENABLED: "true"
       TELEMETRY: "false"
 
@@ -50,13 +55,13 @@ services:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-directus}
+      POSTGRES_USER: ${POSTGRES_USER:-directus}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-L@nk0usm@ne}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB} -h 127.0.0.1"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-directus} -d ${POSTGRES_DB:-directus} -h 127.0.0.1"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -68,7 +73,7 @@ services:
     command: >
       sh -c 'redis-server --appendonly yes --requirepass "$$REDIS_PASSWORD"'
     environment:
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-L@nk0usm@ne}
     volumes:
       - redis_data:/data
     healthcheck:
