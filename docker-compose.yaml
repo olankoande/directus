@@ -1,20 +1,90 @@
+version: "3.9"
+
 services:
   directus:
-    image: directus/directus:latest
+    image: directus/directus:11.1.1
+    restart: unless-stopped
+    init: true
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      # --- Directus core ---
+      KEY: ${DIRECTUS_KEY:lankoandeousmane}
+      SECRET: ${DIRECTUS_SECRET:lankoandeousmanesalifou}
+      PUBLIC_URL: ${DIRECTUS_PUBLIC_URL:https://jobizybackend.kikandi.com/}
+
+      # --- Initial admin user ---
+      ADMIN_EMAIL: ${DIRECTUS_ADMIN_EMAIL:admin@kikandi.com}
+      ADMIN_PASSWORD: ${DIRECTUS_ADMIN_PASSWORD:L@nk0usm@ne}
+
+      # --- Database (PostgreSQL) ---
+      DB_CLIENT: postgres
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: ${POSTGRES_DB:-directus}
+      DB_USER: ${POSTGRES_USER:-directus}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:L@nk0usm@ne}
+
+      # --- Redis / cache / synchronization ---
+      REDIS_ENABLED: "true"
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:L@nk0usm@ne}
+
+      CACHE_ENABLED: "true"
+      CACHE_STORE: redis
+      CACHE_AUTO_PURGE: "true"
+
+      SYNCHRONIZATION_STORE: redis
+
+      # --- Optional ---
+      WEBSOCKETS_ENABLED: "true"
+      TELEMETRY: "false"
+
+    volumes:
+      - directus_uploads:/directus/uploads
+      - directus_extensions:/directus/extensions
+
     ports:
       - "8055:8055"
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
     environment:
-      KEY: "lankoandeousmane"
-      SECRET: "lankoandeousmane"
-      ADMIN_EMAIL: "admin@kikandi.com"
-      ADMIN_PASSWORD: "L@nk0usm@ne"
-      PUBLIC_URL: "https://jobizybackend.kikandi.com"
-      DB_CLIENT: "mysql"
-      DB_HOST: "mysql"
-      DB_PORT: "3306"
-      DB_DATABASE: "directus"
-      DB_USER: "directus"
-      DB_PASSWORD: "L@nk0usm@ne"
+      POSTGRES_DB: ${POSTGRES_DB:-directus}
+      POSTGRES_USER: ${POSTGRES_USER:-directus}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:L@nk0usm@ne}
     volumes:
-      - ./uploads:/directus/uploads
-      - ./extensions:/directus/extensions
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-directus} -d ${POSTGRES_DB:-directus} -h 127.0.0.1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: >
+      sh -c 'redis-server --appendonly yes --requirepass "$$REDIS_PASSWORD"'
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:L@nk0usm@ne}
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", 'redis-cli -a "$$REDIS_PASSWORD" -h 127.0.0.1 ping | grep PONG']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  postgres_data:
+  redis_data:
+  directus_uploads:
+  directus_extensions:
